@@ -83,8 +83,8 @@ public class CustomGlobal extends AbstractCustomGlobal {
      * is labeled with a text 'GO'. Alternatively, you can specify an icon that is
      * shown on the button. See AbstractCustomGlobal.CustomButton for more details.
      */
-    @AbstractCustomGlobal.CustomButton(buttonText = "GO", toolTipText = "A sample button")
+    @AbstractCustomGlobal.CustomButton(buttonText = "Example", toolTipText = "A sample button")
     public void sampleButton() {
-        JOptionPane.showMessageDialog(null, "You Pressed the 'GO' button.");
+        JOptionPane.showMessageDialog(null, "Pressing example buttom.");
     }
 }

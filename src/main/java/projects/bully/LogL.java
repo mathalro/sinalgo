@@ -36,9 +36,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package projects.bully;
 
-/**
- * Enumerates the log-levels. Levels above THRESHOLD will be included in the
- * log-file. The levels below (with a higher enumeration value) not.
- */
+import lombok.Getter;
+import lombok.Setter;
+
 public class LogL extends sinalgo.tools.logging.LogL {
+
+    @Getter
+    @Setter
+    private static boolean SEND = true;
+
 }
+
+
+
+
+
