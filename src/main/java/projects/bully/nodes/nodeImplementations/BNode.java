@@ -17,6 +17,8 @@ public class BNode extends Node {
     @Getter
     @Setter
     private long leader = -1;
+    private long countT = 0;
+    private final long TTL = 5;
 
     private State state = State.DEFAULT;
     private enum State {
@@ -31,17 +33,20 @@ public class BNode extends Node {
         }
     }
 
-    private void initiateElection() {
+    private boolean initiateElection() {
+        int countGreater = 0;
         this.state = State.WAIT_OK;
         System.out.print(this.getID()+" -> ");
         for (Edge e : this.getOutgoingConnections()) {
             if (this.getID() < e.getEndNode().getID()) {
+                countGreater++;
                 System.out.print(e.getEndNode().getID()+", ");
                 ElectionMessage m = new ElectionMessage();
                 this.send(m, e.getEndNode());
             }
         }
         System.out.println();
+        return countGreater != 0;
     } 
 
     private void sendCoordinator() {
@@ -60,55 +65,44 @@ public class BNode extends Node {
 
     @Override
     public void handleMessages(Inbox inbox) {
-        System.out.println(this.getID()+" "+this.state);
-        switch (this.state) {
-            case WAIT_OK:
-                System.out.println(this.getID()+" - 1 - "+inbox.hasNext());
-                boolean hasOk = false;
-                while (inbox.hasNext()) {
-                    Message m = inbox.next();
-                    if (m instanceof OkMessage) { // TODO it's necessary verify if the message is ok type 
-                        hasOk = true;
-                        break;
-                    }
-                }
-                if (hasOk) { 
-                    this.state = State.WAIT_COORD;
-                } else {
-                    this.state = State.LEADER;
-                    this.sendCoordinator();
-                }
-                break;
-            case WAIT_COORD:
-                System.out.println(this.getID()+" - 2");
-                boolean hasCoord = false;
-                long coord = -1;
-                while (inbox.hasNext()) {
-                    Message m = inbox.next();
-                    if (m instanceof CoordMessage) { // TODO it's necessary verify if the message is coordinator type
-                        hasCoord = true;
-                        coord = inbox.getSender().getID();
-                        break;
-                    }
-                }
-                if (hasCoord) {
-                    this.leader = coord;
-                    this.state = State.DEFAULT;
-                } else {
-                    this.initiateElection();
-                }
-                break;
-            default:
-                System.out.println(this.getID()+" - 3");
-                while (inbox.hasNext()) {
-                    Message m = inbox.next();
-                    if (m instanceof ElectionMessage) {
+        System.out.println(this.getID()+" "+this.state+" "+inbox.size());
+        while (inbox.hasNext()) {
+            Message m = inbox.next();
+            if (m instanceof ElectionMessage) {
+                System.out.println(this.getID()+" Receives election");
+                if (this.state == State.DEFAULT) {
+                    if (!this.initiateElection()) {
+                        System.out.println(this.getID()+" Lider");
+                        this.sendCoordinator();
+                        this.state = State.LEADER;
+                        this.countT = 0;
+                    } else {
                         Message newM = new OkMessage();
                         this.send(newM, inbox.getSender());
-                        if (this.state != State.WAIT_OK)
-                            this.initiateElection();
                     }
+                } else {
+                    Message newM = new OkMessage();
+                    this.send(newM, inbox.getSender());
                 }
+            } else if (m instanceof OkMessage) {
+                System.out.println(this.getID()+" Receives OK");
+                if (this.state == State.WAIT_OK) {
+                    this.state = State.WAIT_COORD;
+                }
+            } else if (m instanceof CoordMessage) {
+                System.out.println(this.getID()+" Receives coord");
+                if (this.state == State.WAIT_COORD || this.state == State.WAIT_OK) {
+                    this.state = State.DEFAULT;
+                    this.leader = inbox.getSender().getID();
+                    this.countT = 0;
+                }
+            }
+        }
+
+        if (this.countT == TTL && this.state == State.WAIT_OK) {
+            this.sendCoordinator();
+            this.countT = 0;
+            this.state = State.LEADER;
         }
 	}
 
@@ -124,14 +118,16 @@ public class BNode extends Node {
 
     @Override
     public void preStep() {
-        if (this.leader == -1) {
+        if (this.state == State.DEFAULT && this.leader == -1 ||
+            this.countT == this.TTL && this.state == State.WAIT_COORD) {
+            this.countT = 0;
             initiateElection();
         }
     }
 
     @Override
     public void postStep() {
-
+        this.countT++;
     }
 
     @Override
@@ -142,7 +138,8 @@ public class BNode extends Node {
             s.append(e.getEndNode().getID()+", ");
         }
         s.append("\n");
-        s.append(this.leader);
+        s.append(this.leader+"\n");
+        s.append(this.state);
         return s.toString() + "\n";
     }
 
