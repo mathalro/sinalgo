@@ -1,8 +1,11 @@
 package projects.bully.nodes.nodeImplementations;
 
+import java.awt.Color; 
+import java.awt.Graphics; 
 import lombok.Getter;
 import lombok.Setter;
 import sinalgo.exception.WrongConfigurationException;
+import sinalgo.gui.transformation.PositionTransformation; 
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
@@ -19,6 +22,7 @@ public class BNode extends Node {
     private long leader = -1;
     private long countT = 0;
     private final long TTL = 5;
+    private Color sscolor;
 
     private State state = State.DEFAULT;
     private enum State {
@@ -57,6 +61,10 @@ public class BNode extends Node {
             }
         }
     }
+
+    public void setSSColor(Color c) {
+		this.sscolor=c;
+	}
 
     @Override
     public void checkRequirements() throws WrongConfigurationException {
@@ -108,7 +116,7 @@ public class BNode extends Node {
 
     @Override
     public void init() {
-        
+        this.setSSColor(Color.ORANGE);
 	}
 
     @Override
@@ -128,6 +136,9 @@ public class BNode extends Node {
     @Override
     public void postStep() {
         this.countT++;
+        if(this.state == State.LEADER){
+        	this.setSSColor(Color.BLUE);
+        }
     }
 
     @Override
@@ -142,5 +153,16 @@ public class BNode extends Node {
         s.append(this.state);
         return s.toString() + "\n";
     }
+
+    /* Function draw is used to display the node. */
+
+	public void draw(Graphics g, PositionTransformation pt, boolean highlight) 
+	{
+		Long id = this.getID();
+		this.setColor(this.sscolor);
+		Color c  = Color.BLACK;
+		super.drawNodeAsDiskWithText(g, pt, highlight, Long.toString(id), 20, c);
+
+	}
 
 }
