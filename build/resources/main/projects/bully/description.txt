@@ -1,7 +1,18 @@
-This is the template project.
+Bully Algorithm - Leader Election
 
-Copy this folder and rename it to start a new project. If this description
-appears for a project that is not the template description then the 
-description has not yet been written. Please describe the project in 
-the description.txt stored in the project root folder of this
-project.
+# Description
+
+	This is a simulation for the bully leader election algorithm. The algorithm assumes the following properties:
+
+		* The process can fail during the election.
+		* Assumes reliable transmission.
+		* Assumes synchrounous system.
+		* Each process knows the id of the other process and can communicate with all them.
+		* 3 messages: election, response (Ok) and coordinator.
+
+# Simulation
+
+	1 - When the simulation starts, each nodes start a election, in order to choose a leader for the group already in the beginning.
+	2 - When a new node get in the group, this node starts a new election.
+	3 - It's possible to disable a node, in order to test what happens when a leader becomes unreachable.
+	4 - It's possible to encable a node, in order to test what happens when a old leader that was unreachable comes back.

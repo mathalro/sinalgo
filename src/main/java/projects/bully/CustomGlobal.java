@@ -37,6 +37,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package projects.bully;
 
 import sinalgo.runtime.AbstractCustomGlobal;
+import sinalgo.tools.Tools;
+import projects.bully.nodes.nodeImplementations.BNode;
+import sinalgo.nodes.Node;
+import sinalgo.runtime.nodeCollection.AbstractNodeCollection;
 
 import javax.swing.*;
 
@@ -83,8 +87,65 @@ public class CustomGlobal extends AbstractCustomGlobal {
      * is labeled with a text 'GO'. Alternatively, you can specify an icon that is
      * shown on the button. See AbstractCustomGlobal.CustomButton for more details.
      */
-    @AbstractCustomGlobal.CustomButton(buttonText = "Example", toolTipText = "A sample button")
-    public void sampleButton() {
-        JOptionPane.showMessageDialog(null, "Pressing example buttom.");
+    @AbstractCustomGlobal.CustomButton(buttonText = "Test Leader", toolTipText = "Try to send a message to the leader")
+    public void testLeaderButtom() {
+        String nodeId = JOptionPane.showInputDialog(null, "Please, choose a node to test leader:");
+        boolean exist = false;
+        for (Node n : Tools.getNodeList()) {
+            if (n.getID() == Integer.valueOf(nodeId)) {
+                exist = true;
+                break;
+            }
+        }
+
+        if (exist) {
+            BNode node = (BNode) Tools.getNodeByID(Integer.valueOf(nodeId));
+            if (node.testLeader()) {
+                JOptionPane.showMessageDialog(null, "The leader is reachable!");
+            } else {
+                JOptionPane.showMessageDialog(null, "The leader isn't reachable. The node "+nodeId+" is going to start a new election!");
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "The choosen node doesn't exist");
+        }
+        
+    }
+
+    @AbstractCustomGlobal.CustomButton(buttonText = "Disable Node", toolTipText = "Make a node unreachable")
+    public void disableButtom() {
+        String nodeId = JOptionPane.showInputDialog(null, "Please, choose a node to disable:");
+        boolean exist = false;
+        for (Node n : Tools.getNodeList()) {
+            if (n.getID() == Integer.valueOf(nodeId)) {
+                exist = true;
+                break;
+            }
+        }
+
+        if (exist) {
+            BNode node = (BNode) Tools.getNodeByID(Integer.valueOf(nodeId));
+            node.setReachable(false);
+        } else {
+            JOptionPane.showMessageDialog(null, "The choosen node doesn't exist");
+        }
+    }
+
+    @AbstractCustomGlobal.CustomButton(buttonText = "Enable Node", toolTipText = "Make a node reachable")
+    public void enableButtom() {
+        String nodeId = JOptionPane.showInputDialog(null, "Please, choose a node to enable:");
+        boolean exist = false;
+        for (Node n : Tools.getNodeList()) {
+            if (n.getID() == Integer.valueOf(nodeId)) {
+                exist = true;
+                break;
+            }
+        }
+
+        if (exist) {
+            BNode node = (BNode) Tools.getNodeByID(Integer.valueOf(nodeId));
+            node.setReachable(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "The choosen node doesn't exist");
+        }
     }
 }

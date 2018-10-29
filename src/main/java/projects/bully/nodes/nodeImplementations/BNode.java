@@ -16,12 +16,11 @@ import sinalgo.nodes.edges.Edge;
  * The class to simulate the bully leader election algorithm.
  */
 public class BNode extends Node {
-
-    @Getter
-    @Setter
+	private boolean back = false;
+    private boolean reachable = true;
     private long leader = -1;
     private long countT = 0;
-    private final long TTL = 5;
+    private final long TTL = 6;
     private Color sscolor;
 
     private State state = State.DEFAULT;
@@ -37,19 +36,27 @@ public class BNode extends Node {
         }
     }
 
+    public void setReachable(boolean value) {
+    	this.reachable = value;
+    	if (value && this.state == State.LEADER) {
+    		this.back = true;
+    	}
+    }
+
+    public boolean isReachable() {
+    	return this.reachable;
+    }
+
     private boolean initiateElection() {
         int countGreater = 0;
         this.state = State.WAIT_OK;
-        System.out.print(this.getID()+" -> ");
         for (Edge e : this.getOutgoingConnections()) {
             if (this.getID() < e.getEndNode().getID()) {
                 countGreater++;
-                System.out.print(e.getEndNode().getID()+", ");
                 ElectionMessage m = new ElectionMessage();
                 this.send(m, e.getEndNode());
             }
         }
-        System.out.println();
         return countGreater != 0;
     } 
 
@@ -66,6 +73,50 @@ public class BNode extends Node {
 		this.sscolor=c;
 	}
 
+	public void recoloring() {
+
+		if (!this.reachable) {
+			this.setSSColor(Color.GRAY);
+			return;
+		}
+
+		switch (this.state) {
+			case DEFAULT: 
+				this.setSSColor(Color.ORANGE);
+				break;
+			case LEADER:
+				this.setSSColor(Color.BLUE);
+				break;
+			case WAIT_OK:
+				this.setSSColor(Color.GREEN);
+				break;
+			case WAIT_COORD:
+				this.setSSColor(Color.RED);
+				break;
+			default:
+		}
+	}
+
+    private Node getLeaderNode() {
+    	Node leaderNode = null;
+    	for (Edge e : this.getOutgoingConnections()) {
+    		if (this.leader == e.getEndNode().getID()) {
+    			leaderNode = e.getEndNode();
+    		}
+    	}
+    	return leaderNode;
+    }
+
+	public boolean testLeader() {
+		BNode leaderNode = (BNode) this.getLeaderNode();
+		if (!leaderNode.isReachable()) {
+			this.leader = -1;
+			return false;
+		} else {
+			return true;
+		}
+	}
+
     @Override
     public void checkRequirements() throws WrongConfigurationException {
 
@@ -73,14 +124,11 @@ public class BNode extends Node {
 
     @Override
     public void handleMessages(Inbox inbox) {
-        System.out.println(this.getID()+" "+this.state+" "+inbox.size());
         while (inbox.hasNext()) {
             Message m = inbox.next();
             if (m instanceof ElectionMessage) {
-                System.out.println(this.getID()+" Receives election");
                 if (this.state == State.DEFAULT) {
                     if (!this.initiateElection()) {
-                        System.out.println(this.getID()+" Lider");
                         this.sendCoordinator();
                         this.state = State.LEADER;
                         this.countT = 0;
@@ -88,22 +136,18 @@ public class BNode extends Node {
                         Message newM = new OkMessage();
                         this.send(newM, inbox.getSender());
                     }
-                } else {
+                } else if (this.reachable) {
                     Message newM = new OkMessage();
                     this.send(newM, inbox.getSender());
                 }
             } else if (m instanceof OkMessage) {
-                System.out.println(this.getID()+" Receives OK");
                 if (this.state == State.WAIT_OK) {
                     this.state = State.WAIT_COORD;
                 }
             } else if (m instanceof CoordMessage) {
-                System.out.println(this.getID()+" Receives coord");
-                if (this.state == State.WAIT_COORD || this.state == State.WAIT_OK) {
-                    this.state = State.DEFAULT;
-                    this.leader = inbox.getSender().getID();
-                    this.countT = 0;
-                }
+                this.state = State.DEFAULT;
+                this.leader = inbox.getSender().getID();
+                this.countT = 0;
             }
         }
 
@@ -111,6 +155,7 @@ public class BNode extends Node {
             this.sendCoordinator();
             this.countT = 0;
             this.state = State.LEADER;
+            this.leader = this.getID();
         }
 	}
 
@@ -126,43 +171,55 @@ public class BNode extends Node {
 
     @Override
     public void preStep() {
-        if (this.state == State.DEFAULT && this.leader == -1 ||
-            this.countT == this.TTL && this.state == State.WAIT_COORD) {
+        if (this.state == State.DEFAULT && this.leader == -1 /*||
+            this.countT == this.TTL && this.state == State.WAIT_COORD*/) {
             this.countT = 0;
             initiateElection();
+        } else if (this.countT == this.TTL && this.state == State.WAIT_OK) {
+        	this.sendCoordinator();
+        	this.countT = 0;
+        	this.state = State.LEADER;
+        	this.leader = this.getID();
+        } else if (this.back) {
+        	this.back = false;
+        	this.sendCoordinator();
         }
+        recoloring();
     }
 
     @Override
     public void postStep() {
-        this.countT++;
-        if(this.state == State.LEADER){
-        	this.setSSColor(Color.BLUE);
-        }
+    	if (this.state != State.DEFAULT && this.state != State.LEADER)
+        	this.countT++;
+        else this.countT = 0;
     }
 
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(this.getID()+": ");
+        s.append("NODEID: "+this.getID());
+        s.append("\nCONN: (");
+        boolean first = true;
         for (Edge e : this.getOutgoingConnections()) {
-            s.append(e.getEndNode().getID()+", ");
+        	if (!first) {
+        		s.append(", ");
+        	} else first = false;
+            s.append(e.getEndNode().getID());
         }
-        s.append("\n");
-        s.append(this.leader+"\n");
-        s.append(this.state);
+        s.append(")\n");
+        s.append("LEADER: "+ this.leader+"\n");
+        s.append("STATE: "+ this.state+"\n");
+        s.append("TTL: "+ this.countT);
         return s.toString() + "\n";
     }
 
     /* Function draw is used to display the node. */
-
-	public void draw(Graphics g, PositionTransformation pt, boolean highlight) 
-	{
+	public void draw(Graphics g, PositionTransformation pt, boolean highlight) {
 		Long id = this.getID();
+		String content = content = Long.toString(id)+"("+(this.leader == -1 ? "-" : Long.toString(this.leader))+")";
 		this.setColor(this.sscolor);
 		Color c  = Color.BLACK;
-		super.drawNodeAsDiskWithText(g, pt, highlight, Long.toString(id), 20, c);
-
+		super.drawNodeAsDiskWithText(g, pt, highlight, content, 20, c);
 	}
 
 }

@@ -147,10 +147,10 @@
                 value="ConstantTime"/>
 
         <!--Default connectivity model used when none is specified -->
-        <defaultConnectivityModel value="UDG"/>
+        <defaultConnectivityModel value="bully:Connection"/>
 
         <!--Default distribution model used when none is specified -->
-        <defaultDistributionModel value="Random"/>
+        <defaultDistributionModel value="Circle"/>
 
         <!--Default interference model used when none is specified -->
         <defaultInterferenceModel value="NoInterference"/>
@@ -162,7 +162,7 @@
         <defaultReliabilityModel value="ReliableDelivery"/>
 
         <!--Default node implementation used when none is specified -->
-        <defaultNodeImplementation value="DummyNode"/>
+        <defaultNodeImplementation value="bully:BNode"/>
 
         <!--*********************************************************************** -->
         <!-- Node storage, position transformation -->
