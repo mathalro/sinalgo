@@ -21,7 +21,7 @@ import sinalgo.nodes.edges.Edge;
 import projects.gossip.nodes.GossipTableEntry;
 
 /**
- * The class to simulate the bully leader election algorithm.
+ * The class to simulate the gossip style failure detection
  */
 public class GNode extends Node {
     private final Long timeFail = 5L;
